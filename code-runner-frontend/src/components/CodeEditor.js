@@ -2,6 +2,7 @@ import React from 'react';
 import Editor from '@monaco-editor/react';
 import './CodeEditor.css'; // 引入样式文件
 
+// 定义支持的编程语言
 const languages = ['java', 'c', 'cpp', 'python', 'javascript', 'typescript'];
 
 function CodeEditor({ language, setLanguage, code, setCode }) {
