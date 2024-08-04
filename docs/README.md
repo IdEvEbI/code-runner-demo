@@ -8,7 +8,7 @@
 
 1. **前端**：`React`、`Monaco Editor`、`Axios`
 2. **后端**：`Spring Boot`、`RestTemplate`、`Judge0 API`
-3. **部署**：`Vercel`、`Heroku`
+3. **附录**：`Judge0 环境部署`
 
 ### 2. 项目结构
 
@@ -218,7 +218,7 @@ npm start
 
 > 提示：点击 `Run` 按钮，查看运行结果功能，需要等后端代码开发完成后再做整合。
 
-### 6. 总结
+### 6. 小结
 
 通过本章的学习，我们完成了前端部分的开发，主要包括以下几个方面：
 
@@ -490,13 +490,13 @@ public class CodeExecutionService {
 
         HttpEntity<String> request = new HttpEntity<>(jsonPayload, headers);
 
-        log.info("开始提交代码 Judge0 API：{}", jsonPayload);
+        log.info("开始提交代码到 Judge0 API：{}", jsonPayload);
         try {
             SubmissionToken token = restTemplate.postForObject(judge0ApiUrl + "submissions?base64_encoded=true&wait=false", request, SubmissionToken.class);
             log.info("接收到 TOKEN：{}", token);
             return token;
         } catch (Exception e) {
-            log.error("Error while submitting code to Judge0 API: {}", e.getMessage());
+            log.error("提交代码到 Judge0 API 时出错：{}", e.getMessage());
             throw new CodeExecutionException("提交代码出错：", e);
         }
     }
@@ -523,9 +523,7 @@ public class CodeExecutionService {
 
 ### 7. 创建控制器类
 
-- 创建 `CodeExecutionController` 类，定义**提交代码**和**获取结果**
-
-的接口：
+- 创建 `CodeExecutionController` 类，定义**提交代码**和**获取结果**的接口：
 
 ```java
 package com.example.coderunner.controller;
@@ -623,7 +621,7 @@ public class CodeExecutionController {
    }
    ```
 
-### 9. 总结
+### 9. 小结
 
 通过本章的学习，我们完成了后端部分的开发，主要包括以下几点：
 
@@ -635,125 +633,91 @@ public class CodeExecutionController {
 
 这样，我们的前后端联调可以实现用户在线编写代码，并获取运行结果的功能。在实际开发中，可以根据需求进一步优化和扩展功能。
 
-<!-- TODO: 后续内容没有检查 -->
+## 四、前后端整合
 
-### 5. 整合前后端
+本章目标是实现前后端的整合，使用户能够在前端编写代码并发送到后端执行，最终获取代码运行结果。我们将介绍前端和后端的调整和优化步骤，确保前后端联调顺畅。
 
-前端通过 `axios` 发送请求到后端，并显示运行结果。确保前后端接口匹配，能够正常通信。
+### 1. 前端部分
 
-以上是完整的后端代码实现和配置步骤，包括了从项目初始化到最终运行的所有必要步骤。
+在前端部分，我们需要完成以下几项工作：
 
-# Code-runner-Demo 开发记录
+1. 配置后端 API 地址。
+2. 修改代码运行功能，使其能够**发送请求到后端 API 并获取代码运行结果**，并做一系列的优化，包括样式。
 
-## 一、目标
+#### 1.1 配置后端 API 地址
 
-开发一个支持**多种编程语言的在线代码编辑和运行平台**，用户可以选择编程语言，在线编写代码，并查看运行结果。
+在项目根目录下创建一个 `.env` 文件，配置后端 API 的地址：
 
-### 1. 技术选型
-
-1. **前端**：`React`、`Monaco Editor`、`Axios`
-2. **后端**：`Spring Boot`、`RestTemplate`、`Judge0 API`
-3. **部署**：`Vercel`、`Heroku`
-
-### 2. 项目结构
-
-```text
-code-editor-platform/
-├── docs/
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   ├── package.json
-│   ├── ...
-├── backend/
-│   ├── src/
-│   ├── pom.xml
-│   ├── ...
+```env
+REACT_APP_API_URL=http://localhost:8080/api
 ```
 
-## 二、前端开发
+#### 1.2 修改代码运行功能
 
-### 1. 初始化 React 项目
-
-- 使用 Create React App 创建项目
-
-```bash
-npx create-react-app frontend
-cd frontend
-```
-
-- 项目目录结构介绍
-
-### 2. 安装和配置 Monaco Editor
-
-- 安装 Monaco Editor
-
-```bash
-npm install @monaco-editor/react
-```
-
-- 配置 Monaco Editor
-
-```jsx
-import Editor from '@monaco-editor/react';
-```
-
-### 3. 创建代码编辑器组件
-
-- 编写 CodeEditor 组件
-
-```jsx
-import React, { useState } from 'react';
-import Editor from '@monaco-editor/react';
-
-const languages = ['java', 'c', 'cpp', 'python', 'javascript', 'typescript'];
-
-function CodeEditor() {
-  const [language, setLanguage] = useState('javascript');
-  const [code, setCode] = useState('');
-
-  return (
-    <div>
-      <select onChange={(e) => setLanguage(e.target.value)} value={language}>
-        {languages.map((lang) => (
-          <option key={lang} value={lang}>{lang}</option>
-        ))}
-      </select>
-      <Editor
-        height="50vh"
-        language={language}
-        value={code}
-        onChange={(value) => setCode(value)}
-      />
-    </div>
-  );
-}
-
-export default CodeEditor;
-```
-
-- 实现语言选择功能
-
-### 4. 创建代码运行功能
-
-- 编写 RunCode 按钮组件
+- 修改 `src/components/RunCode.js` 文件，使其能够发送请求到后端 API 并获取代码运行结果：
 
 ```jsx
 import axios from 'axios';
 import React, { useState } from 'react';
+import './RunCode.css'; // 引入样式文件
 
 function RunCode({ language, code }) {
   const [output, setOutput] = useState('');
+  const [isRunning, setIsRunning] = useState(false);
 
   const handleRun = async () => {
-    const response = await axios.post('/api/run', { language, code });
-    setOutput(response.data.output);
+    if (!code.trim()) {
+      setOutput('请输入要运行的代码。');
+      return;
+    }
+
+    setIsRunning(true);
+    setOutput('正在运行中...');
+
+    try {
+      // 发送代码到后端获取 token
+      const submitResponse = await axios.post(`${process.env.REACT_APP_API_URL}/submit`, {
+        source_code: code,
+        language_id: languageToId(language),
+        stdin: '',
+        compiler_options: '',
+        command_line_arguments: '',
+        redirect_stderr_to_stdout: true
+      });
+
+      const { token } = submitResponse.data;
+
+      // 使用 token 获取运行结果
+      const resultResponse = await axios.get(`${process.env.REACT_APP_API_URL}/result/${token}`);
+      const result = resultResponse.data;
+
+      // 处理不同类型的输出
+      setOutput(result.stdout || result.stderr || result.compile_output || result.message || '没有检测到输出内容。');
+    } catch (error) {
+      setOutput('错误: ' + error.message);
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  const languageToId = (language) => {
+    const languageMap = {
+      'java': 62,
+      'c': 50,
+      'cpp': 54,
+      'python': 71,
+      'javascript': 63,
+      'typescript': 74
+    };
+    return languageMap[language];
   };
 
   return (
-    <div>
-      <button onClick={handleRun}>Run</button>
-      <pre>{output}</pre>
+    <div className="run-code">
+      <button onClick={handleRun} className="run-button" disabled={isRunning || !code.trim()}>
+        {isRunning ? '正在运行中...' : '运行'}
+      </button>
+      <pre className="output">{output}</pre>
     </div>
   );
 }
@@ -761,162 +725,343 @@ function RunCode({ language, code }) {
 export default RunCode;
 ```
 
-- 使用 Axios 发送 HTTP 请求到后端
-- 显示代码运行结果
+- 修改 `src/components/RunCode.css` 文件，增加**运行按钮被禁用**的样式：
 
-#### 三、后端部分
+```css
+.run-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+```
 
-##### 1. 初始化 Spring Boot 项目
+### 2. 后端部分
 
-- 使用 Spring Initializr 创建项目
-  - 添加 Spring Web 依赖
-- 项目目录结构介绍
+在后端部分，我们需要完成以下几项工作：
 
-##### 2. 配置 Judge0 API 客户端
+1. 在 `CodeExecutionController` 增加 `@CrossOrigin(origins = "http://localhost:3000")` 解决跨域问题。
+2. 增加 `UTF-8` 编码，以解决传递给 Judge API 的代码中包含中文的问题，其中包括：
+   1. 修改 `CodeExecutionService` 中的 `submitCode` 方法，使 `HttpHeaders` 接收 UTF-8 编码。
+   2. 修改 `CodeExecutionService` 中的 `submitCode` 方法，使 `base64EncodedSourceCode` 增加 `StandardCharsets.UTF_8`。
+   3. 修改 `CodeExecutionService` 中的 `fetchResult` 方法，增加 `?base64_encoded=true` 请求参数，并增加了 base64 解码。
+3. 修改 `CodeExecutionService` 中的 `fetchResult` 方法，增加 `while` 循环避免前端请求发送太快，`Judge0 API` 没有足够的时间计算出结果。
 
-- 创建 CodeExecutionService 服务类
+#### 2.1 解决跨域问题
+
+在 `CodeExecutionController` 类上增加 `@CrossOrigin` 注解：
 
 ```java
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+@RestController
+@RequestMapping("/api")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "http://localhost:3000")
+public class CodeExecutionController {
+```
 
-@Service
-public class CodeExecutionService {
+#### 2.2 创建 Base64 工具类
 
-    private final String JUDGE0_API_URL = "https://api.judge0.com/submissions?base64_encoded=false&wait=true";
-    private final RestTemplate restTemplate;
+- 创建 `Base64Util` 工具类负责 `base64` 的编解码工作：
 
-    public CodeExecutionService(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
+```java
+package com.example.coderunner.util;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+
+public class Base64Util {
+
+    public static String encode(String input) {
+        return Base64.getEncoder().encodeToString(input.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String executeCode(String language, String sourceCode) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        String requestBody = String.format(
-            "{\"source_code\": \"%s\", \"language_id\": %d, \"stdin\": \"\"}",
-            sourceCode, getLanguageId(language)
-        );
-
-        HttpEntity<String> requestEntity = new HttpEntity<>(requestBody, headers);
-        ResponseEntity<String> responseEntity = restTemplate.postForEntity(JUDGE0_API_URL, requestEntity, String.class);
-
-        return responseEntity.getBody();
+    public static String decode(String input) {
+        return new String(Base64.getDecoder().decode(input), StandardCharsets.UTF_8);
     }
+}
+```
 
-    private int getLanguageId(String language) {
-        switch (language) {
-            case "java":
-                return 62;
-            case "c":
-                return 50;
-            case "cpp":
-                return 54;
-            case "python":
-                return 71;
-            case "javascript":
-                return 63;
-            case "typescript":
-                return 74;
-            default:
-                throw new IllegalArgumentException("Unsupported language: " + language);
+#### 2.3 修改 `submitCode` 方法
+
+- 修改 `CodeExecutionService` 调用 `submitCode`，增加 `UTF-8` 编码的接收：
+
+```java
+/**
+ * 提交代码到 Judge0 API 获取 token
+ *
+ * @param codeSubmission 包含代码和相关参数的对象
+ * @return SubmissionToken 提交代码后从 Judge0 API 返回的 token
+ */
+public SubmissionToken submitCode(CodeSubmission codeSubmission) {
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(new MediaType("application", "json", StandardCharsets.UTF_8));
+    headers.setAccept(Collections.singletonList(new MediaType("application", "json", StandardCharsets.UTF_8)));
+
+    // 使用 Base64 编码源代码
+    String base64EncodedSourceCode = Base64Util.encode(codeSubmission.getSource_code());
+
+    // 手动构建 JSON 字符串
+    String jsonPayload = String.format(
+            "{\"source_code\":\"%s\",\"language_id\":%d,\"stdin\":\"%s\",\"compiler_options\":\"%s\",\"command_line_arguments\":\"%s\",\"redirect_stderr_to_stdout\":%b}",
+            base64EncodedSourceCode,
+            codeSubmission.getLanguage_id(),
+            codeSubmission.getStdin(),
+            codeSubmission.getCompiler_options(),
+            codeSubmission.getCommand_line_arguments(),
+            codeSubmission.isRedirect_stderr_to_stdout()
+    );
+
+    HttpEntity<String> request = new HttpEntity<>(jsonPayload, headers);
+
+    log.info("开始提交代码到 Judge0 API：{}", jsonPayload);
+    try {
+        SubmissionToken token = restTemplate.postForObject(judge0ApiUrl + "submissions?base64_encoded=true&wait=false", request, SubmissionToken.class);
+        log.info("接收到 TOKEN：{}", token);
+        return token;
+    } catch (Exception e) {
+        log.error("提交代码到 Judge0 API 时出错：{}", e.getMessage());
+        throw new CodeExecutionException("提交代码出错：", e);
+    }
+}
+```
+
+#### 2.4 修改 `fetchResult` 方法
+
+- 修改 `CodeExecutionService` 调用 `fetchResult`，增加循环避免前端请求太快，查询不到结果问题，同时增加 `base64` 解码功能：
+
+```java
+/**
+ * 使用 token 从 Judge0 API 获取代码运行结果
+ *
+ * @param token 提交代码后从 Judge0 API 返回的 token
+ * @return CodeResponse 从 Judge0 API 获取的运行结果
+ */
+public CodeResponse fetchResult(String token) {
+    String resultUrl = judge0ApiUrl + "submissions/" + token + "?base64_encoded=true";
+    log.info("开始获取执行结果 {}", resultUrl);
+
+    while (true) {
+        try {
+            CodeResponse result = restTemplate.getForObject(resultUrl, CodeResponse.class);
+            log.info("从 Judge0 API 获取的原始结果：{}", result);
+
+            if (result != null && result.getStatus().getId() != 1) {
+                // 解码 Base64 字段
+                result.setStdout(Base64Util.decode(result.getStdout()));
+                result.setStderr(Base64Util.decode(result.getStderr()));
+                result.setCompile_output(Base64Util.decode(result.getCompile_output()));
+                result.setMessage(Base64Util.decode(result.getMessage()));
+
+                log.info("解码后的结果：{}", result);
+                return result;
+            }
+            Thread.sleep(1000); // 等待 1 秒钟再请求
+        } catch (Exception e) {
+            log.error("从 Judge0 API 获取结果时出错：{}", e.getMessage());
+            throw new CodeExecutionException("获取执行结果出错", e);
         }
     }
 }
 ```
 
-- 配置 RestTemplate
+### 3. 小结
 
-##### 3. 创建代码执行接口
+通过本章的学习，我们完成了前后端的整合，具体工作包括：
 
-- 创建 CodeExecutionController 控制器类
+1. 前端配置后端 API 地址，修改代码运行功能和代码编辑功能。
+2. 后端解决跨域问题，修改提交和获取代码结果的方法，使其支持 `UTF-8` 编码和 `base64` 编解码。
 
-```java
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+通过这些调整，用户能够在前端编写代码并发送到后端执行，最终获取代码运行结果。这样不仅提升了代码运行平台的用户体验，还确保了代码执行的稳定性和准确性。
 
-@RestController
-@RequestMapping("/api")
-public class CodeExecutionController {
+## 五、附录：Judge0 环境部署
 
-    private final CodeExecutionService codeExecutionService;
+本章目标是通过 Docker 完成 Judge0 环境的部署，使其能够作为后端服务接受代码提交并返回执行结果。本文将详细介绍从下载镜像到启动 Judge0 环境的具体步骤。
 
-    @Autowired
-    public CodeExecutionController(CodeExecutionService codeExecutionService) {
-        this.codeExecutionService = codeExecutionService;
-    }
+### 1. 介绍
 
-    @PostMapping("/run")
-    public String runCode(@RequestBody CodeExecutionRequest request) {
-        return codeExecutionService.executeCode(request.getLanguage(), request.getCode());
-    }
-}
+Judge0 是一个开源的在线判题系统，支持多种编程语言的代码编译和运行。为了确保我们的系统能够处理和运行用户提交的代码，我们需要在本地或服务器上配置 Judge0 环境。以下步骤将指导你如何使用 Docker 镜像部署 Judge0 环境，包括 Redis、Postgres 和 Judge0 三个部分。
 
-class CodeExecutionRequest {
-    private String language;
-    private String code;
+### 2. 步骤
 
-    // Getters and setters
-    public String getLanguage() {
-        return language;
-    }
+#### 2.1 在主机上下载镜像
 
-    public void setLanguage(String language) {
-        this.language = language;
-    }
+首先，我们需要在主机上下载所需的 Docker 镜像。
 
-    public String getCode() {
-        return code;
-    }
+1. **下载 Redis 镜像**：
 
-    public void setCode(String code) {
-        this.code = code;
-    }
-}
+    ```bash
+    docker pull redis:7.2.4
+    ```
+
+2. **下载 Postgres 镜像**：
+
+    ```bash
+    docker pull postgres:16.2
+    ```
+
+3. **下载 Judge0 镜像**：
+
+    ```bash
+    docker pull judge0/judge0:1.13.1
+    ```
+
+#### 2.2 保存镜像
+
+下载完成后，我们将镜像保存为文件，以便传输到其他虚拟机或服务器。
+
+1. **保存 Redis 镜像**：
+
+    ```bash
+    docker save -o redis_7.2.4.tar redis:7.2.4
+    ```
+
+2. **保存 Postgres 镜像**：
+
+    ```bash
+    docker save -o postgres_16.2.tar postgres:16.2
+    ```
+
+3. **保存 Judge0 镜像**：
+
+    ```bash
+    docker save -o judge0_1.13.1.tar judge0/judge0:1.13.1
+    ```
+
+#### 2.3 传输镜像到虚拟机
+
+使用 `scp` 或其他工具将镜像文件传输到虚拟机。例如：
+
+```bash
+scp redis_7.2.4.tar postgres_16.2.tar judge0_1.13.1.tar your_username@your_vm_ip:/path/to/destination
 ```
 
-- 编写 CodeExecutionRequest 请求类
+#### 2.4 在虚拟机上加载镜像
 
-##### 4. 测试后端 API
+在虚拟机上加载镜像：
 
-- 使用 Postman 或类似工具测试 API
+1. **加载 Redis 镜像**：
 
-#### 四、前后端集成
+    ```bash
+    docker load -i /path/to/destination/redis_7.2.4.tar
+    ```
 
-##### 1. 配置前端请求后端服务
+2. **加载 Postgres 镜像**：
 
-- 修改前端 Axios 配置
+    ```bash
+    docker load -i /path/to/destination/postgres_16.2.tar
+    ```
 
-```jsx
-axios.defaults.baseURL = 'http://localhost:8080';
-```
+3. **加载 Judge0 镜像**：
 
-- 测试前后端集成
+    ```bash
+    docker load -i /path/to/destination/judge0_1.13.1.tar
+    ```
 
-##### 2. 部署前端应用
+#### 2.5 启动 Redis 和 Postgres
 
-- 使用 Vercel 或 Netlify 部署 React 应用
+接下来，启动 Redis 和 Postgres 服务：
 
-##### 3. 部署后端应用
+1. **启动 Redis**：
 
-- 使用 Heroku 或 DigitalOcean 部署 Spring Boot 应用
-- 自行部署 Judge0 实例（可选）
+    ```bash
+    docker run -d --name redis --network judge0-network redis:7.2.4
+    ```
 
-#### 五、结论
+2. **启动 Postgres**：
 
-##### 1. 项目总结
+    ```bash
+    docker run -d --name judge0-postgres --network judge0-network \
+      -e POSTGRES_USER=judge0 \
+      -e POSTGRES_PASSWORD=itheima \
+      -e POSTGRES_DB=judge0 \
+      postgres:16.2
+    ```
 
-我们成功开发了一个支持多种编程语言的在线代码编辑和运行平台，涵盖了前后端开发的各个步骤。
+#### 2.6 启动 Judge0
 
-##### 2. 未来扩展思路
+最后，启动 Judge0 服务：
 
-- 添加用户管理功能
-- 支持更多编程语言
-- 提高安全性
+1. **启动 Judge0**：
 
-这个提纲涵盖了项目的各个方面，可以作为详细教程的基础。根据这个提纲，我们可以逐步开发完整的教程。
+    ```bash
+    docker run -d --name judge0-server --network judge0-network --privileged \
+      -e POSTGRES_HOST=judge0-postgres \
+      -e POSTGRES_PORT=5432 \
+      -e POSTGRES_USER=judge0 \
+      -e POSTGRES_PASSWORD=itheima \
+      -e POSTGRES_DB=judge0 \
+      -e REDIS_HOST=redis \
+      -e REDIS_PORT=6379 \
+      -p 2358:2358 judge0/judge0:1.13.1
+    ```
+
+2. **初始化 Judge0 环境**：
+
+    ```bash
+    docker exec -it judge0-server sh -c "sudo mkdir -p /box && sudo chown judge0:judge0 /box"
+    docker exec -it judge0-server sh -c "sudo /usr/local/bin/isolate --init"
+    docker exec -it judge0-server sh -c "sudo mkdir -p /api/log && sudo touch /api/log/development.log && sudo chmod 0664 /api/log/development.log && sudo chown judge0:judge0 /api/log/development.log"
+    ```
+
+3. **启动 Resque Worker**：
+
+    ```bash
+    docker exec -it judge0-server sh -c "nohup rake resque:work QUEUE=* > /api/log/resque.log 2>&1 &"
+    ```
+
+4. **进入容器以确保 Resque Worker 在后台运行**：
+
+    ```bash
+    docker exec -it judge0-server /bin/sh
+    nohup rake resque:work QUEUE=* &
+    exit
+    ```
+
+5. **检查 Resque Worker 是否在后台运行**：
+
+    ```bash
+    docker exec -it judge0-server ps aux | grep resque
+    ```
+
+### 3. 测试提交
+
+部署完成后，我们可以测试提交代码以确保 Judge0 正常工作。
+
+1. **提交代码**：
+
+    ```bash
+    curl -v -X POST 'http://192.168.227.149:2358/submissions?base64_encoded=true&wait=false' \
+      -H 'Content-Type: application/json' \
+      --data-raw '{"source_code":"Y29uc29sZS5sb2coImhlbGxvLCB3b3JsZCIpOw==","language_id":63,"stdin":"","compiler_options":"","command_line_arguments":"","redirect_stderr_to_stdout":true}'
+    ```
+
+2. **检查提交状态**：
+
+    ```bash
+    curl 'http://192.168.227.149:2358/submissions/{token}'
+    ```
+
+将 `{token}` 替换为实际的令牌值。
+
+### 4. 小结
+
+通过本章的学习，我们完成了 Judge0 环境的 Docker 部署，具体步骤包括：
+
+1. 在主机上下载所需的 Docker 镜像。
+2. 保存镜像文件并传输到虚拟机。
+3. 在虚拟机上加载镜像并启动 Redis、Postgres 和 Judge0 服务。
+4. 初始化 Judge0 环境并启动 Resque Worker。
+5. 测试提交代码，确保 Judge0 正常工作。
+
+这些步骤确保了我们的系统能够处理和运行用户提交的代码，为前后端整合提供了坚实的基础。如果在部署过程中遇到任何问题，请及时进行排查和调整。
+
+## 总结
+
+通过本文档的学习和实践，我们完成了一个支持多种编程语言的在线代码编辑和运行平台的开发和部署。主要包括以下几个方面：
+
+1. **前端开发**：使用 `React` 和 `
+
+Monaco Editor` 实现代码编辑和运行功能。
+2. **后端开发**：使用 `Spring Boot` 实现与 `Judge0 API` 的交互，处理代码提交和获取执行结果。
+3. **前后端整合**：确保前后端能够顺畅地联调，用户可以在线编写代码并查看运行结果。
+4. **Judge0 环境部署**：通过 Docker 部署 Judge0 环境，使系统能够处理和运行用户提交的代码。
+
+通过本项目的开发，我们不仅掌握了前后端技术的基本使用，还学会了如何进行前后端的整合，以及如何通过 Docker 部署后台服务。希望通过这些内容，大家能够对前后端开发、整合以及后台服务的部署有一个更全面的了解。
