@@ -2,13 +2,11 @@ package com.example.coderunner.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 /**
  * 模型类，表示代码提交请求的内容
  */
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
 public class CodeSubmission {
     private String source_code; // base64 编码后的源代码
